@@ -1201,7 +1201,7 @@ function IWin:TankStance()
 						and IWin:IsDefensiveTacticsActive("Berserker Stance")
 					)
 			)
-		and not IWin:IsStanceActive("Berserker Stance") then
+		and not IWin:IsStanceActive("Berserker Stance", false) then
 			IWin:Cast("Berserker Stance", false)
 	elseif IWin:IsSpellLearnt("Battle Stance")
 		and (
@@ -1377,6 +1377,7 @@ function IWin:SetReservedRageWhirlwindNotEnemyInRange(skipEnemyInRange)
 	if not IWin:IsSpellLearnt(spell, nil, false) then return end
 	if not (IWin:GetEnemyInRange("meleeAutoAttack", false) >= 1) then
 		IWin:SetReservedRage(spell, "cooldown")
+	end
 	if not IWin:IsBlacklistAOEDamage()
 		and (skipEnemyInRange or not (IWin:GetEnemyInRange("meleeAutoAttack", false) >= 1)) then
 			IWin:SetReservedRage(spell, "cooldown")
@@ -1425,6 +1426,5 @@ function IWin:SetReservedRageWhirlwindDefensiveTacticsNotEnemyInRange(skipEnemyI
 		and (skipEnemyInRange or not (IWin:GetEnemyInRange("meleeAutoAttack", false) > 1))
 		and IWin:IsDefensiveTacticsActive("Berserker Stance") then
 			IWin:SetReservedRage(spell, "cooldown")
-		end
 	end
 end

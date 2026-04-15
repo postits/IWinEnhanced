@@ -3,16 +3,10 @@ IWin_Spellbook = {
 }
 
 function IWin:GetTalentRank(talentName, debugmsg)
-	local cached = IWin_Spellbook["talent"][talentName]
-    if cached ~= nil then
-    	IWin:Debug(talentName.." talent points: "..tostring(cached), debugmsg)
-        return cached
-    end
 	for tabIndex = 1, GetNumTalentTabs() do
         for talentIndex = 1, GetNumTalents(tabIndex) do
             local name, _, _, _, rank = GetTalentInfo(tabIndex, talentIndex)
             if name and name == talentName then
-            	IWin_Spellbook["talent"][talentName] = tonumber(rank)
             	IWin:Debug(talentName.." talent points: "..rank, debugmsg)
         		return tonumber(rank)
             end
