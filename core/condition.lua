@@ -72,19 +72,8 @@ function IWin:GetBuffRemaining(unit, spell, owner, debugmsg)
 		return cached
 	end
 	-- Debuff scan
-	  if not owner then
-	    local targetGuid = CleveRoids.GetGUID(unit)
-	    if targetGuid then
-	    	local timeLeft = CleveRoids.FindAllCasterAuraByName(targetGuid, spell)
-	    	if timeLeft then
-	    		IWin:Debug("Debuff remaining "..spell.." on "..unit..": "..tostring(timeLeft), debugmsg)
-	    		IWin_CombatVar["buffRemaining"][cacheKey] = timeLeft
-	    		return timeLeft
-	    	end
-	    end
-	end
 	for index = 1, 48 do
-	    local effect, _, _, _, _, _, timeLeft = IWin.libdebuff:UnitDebuff(unit, index, owner)
+	    local effect, _, _, _, _, _, timeLeft = CleveRoids.libdebuff:UnitDebuff(unit, index, owner)
 	    if effect and effect == spell then
 	    	timeLeft = timeLeft or 9999
 	    	IWin:Debug("Debuff remaining "..spell.." on "..unit..": "..tostring(timeLeft), debugmsg)
@@ -159,7 +148,7 @@ function IWin:GetBuffRemaining(unit, spell, owner, debugmsg)
 		end
     -- Debuff scan overflow as buff
 	for index = 1, 64 do
-	    local effect, _, _, _, _, _, timeLeft, caster = IWin.libdebuff:UnitBuff(unit, index)
+	    local effect, _, _, _, _, _, timeLeft, caster = CleveRoids.libdebuff:UnitBuff(unit, index)
 	    if not effect then break end
 	    if effect == spell and ((not owner) or (caster == owner)) then
 	    	IWin:Debug("Debuff overflow remaining "..spell.." on "..unit..": "..tostring(timeLeft or 9999), debugmsg)
@@ -187,16 +176,18 @@ function IWin:GetBuffStack(unit, spell, owner, debugmsg)
 		return cached
 	end
 	-- Nampower API
-	local _, _, stacks = IWin.API.FindUnitAuraInfo(unit, nil, string.lower(spell))
-	if stacks ~= nil then
-		stacks = stacks or 0
-		IWin:Debug("API Debuff "..spell.." stacks on "..unit..": "..tostring(stacks), debugmsg)
-		IWin_CombatVar["buffStack"][cacheKey] = stacks
-	    return stacks
+	if CleveRoids.NampowerAPI and CleveRoids.NampowerAPI.FindUnitAuraInfo then
+		local _, _, stacks = CleveRoids.NampowerAPI.FindUnitAuraInfo(unit, nil, string.lower(spell))
+		if stacks ~= nil then
+			stacks = stacks or 0
+			IWin:Debug("API Debuff "..spell.." stacks on "..unit..": "..tostring(stacks), debugmsg)
+			IWin_CombatVar["buffStack"][cacheKey] = stacks
+		    return stacks
+		end
 	end
 	-- Debuff scan
 	for index = 1, 16 do
-	    local effect, _, texture, stacks, dtype, duration, timeLeft, caster = IWin.libdebuff:UnitDebuff(unit, index)
+	    local effect, _, texture, stacks, dtype, duration, timeLeft, caster = CleveRoids.libdebuff:UnitDebuff(unit, index)
 	    if not effect then break end
 	    if effect == spell and ((not owner) or (caster == owner)) then
 	    	IWin:Debug("Debuff "..spell.." stacks on "..unit..": "..tostring(stacks), debugmsg)
@@ -238,7 +229,7 @@ function IWin:GetBuffStack(unit, spell, owner, debugmsg)
 		end
 	-- Debuff scan overflow as buff
 	for index = 1, 64 do
-	    local effect, _, texture, stacks, dtype, duration, timeLeft, caster = IWin.libdebuff:UnitBuff(unit, index)
+	    local effect, _, texture, stacks, dtype, duration, timeLeft, caster = CleveRoids.libdebuff:UnitBuff(unit, index)
 	    if not effect then break end
 	    if effect == spell and ((not owner) or (caster == owner)) then
 	    	IWin:Debug("Debuff overflow "..spell.." stacks on "..unit..": "..tostring(stacks), debugmsg)
@@ -358,44 +349,37 @@ end
 
 function IWin:GetGCDRemaining(debugmsg)
 	local cached = IWin_CombatVar["GCD"]
-	if cached ~= nil then return cached end
+	if cached ~= nil then
+		IWin:Debug("GCD remaining: "..tostring(cached), debugmsg)
+		return cached
+	end
+	-- From SCRM
     -- Get GCD remaining in seconds
     local gcdRemaining = 0
 
-    -- Try Nampower API first (most accurate)
+    -- Try Nampower API first (handles GetCastInfo + GetSpellIdCooldown)
     if CleveRoids.NampowerAPI and CleveRoids.NampowerAPI.GetGCDRemainingMs then
         local gcdMs = CleveRoids.NampowerAPI.GetGCDRemainingMs()
         if gcdMs and gcdMs > 0 then
             gcdRemaining = gcdMs / 1000
         end
-    else
-        -- Fallback: check the first spell in spellbook for GCD
-        -- GCD shows as cooldown <= 1.5s on any GCD-triggering spell
+    end
+    -- Fallback: scan spellbook for GCD cooldown (pre-v2.18 or if API returned 0)
+    if gcdRemaining == 0 then
         for i = 1, 200 do
             local spellName = GetSpellName(i, BOOKTYPE_SPELL)
             if not spellName then break end
             local start, duration = GetSpellCooldown(i, BOOKTYPE_SPELL)
             if start and duration and duration > 0 and duration <= 1.5 then
-                gcdRemaining = (start + duration) - GetTime()
+                gcdRemaining = (start + duration) - IWin:GetTime()
                 if gcdRemaining < 0 then gcdRemaining = 0 end
                 break
             end
         end
     end
-    if gcdRemaining ~= 0 then
-    	IWin_CombatVar["GCD"] = gcdRemaining
-		IWin:Debug("GCD remaining: "..tostring(gcdRemaining), debugmsg)
-		return gcdRemaining
-	end
-	--[[local info = GetCastInfo()
-	if info and info.gcdRemainingMs then
-		IWin_CombatVar["GCD"] = info.gcdRemainingMs
-		IWin:Debug("GCD remaining: "..tostring(IWin_CombatVar["GCD"]), debugmsg)
-		return IWin_CombatVar["GCD"]
-	end]]
-	IWin:Debug("GCD ready", debugmsg)
-	IWin_CombatVar["GCD"] = 0
-	return 0
+	IWin_CombatVar["GCD"] = gcdRemaining
+	IWin:Debug("GCD remaining: "..tostring(gcdRemaining), debugmsg)
+	return gcdRemaining
 end
 
 function IWin:IsGCDActive(debugmsg)
@@ -948,7 +932,7 @@ function IWin:IsInRange(spell, distance, unit, debugmsg)
 		return cached
 	end
 	if not IWin:IsExists(unit, false) then
-		IWin:Debug("No range for unkown "..unit, debugmsg)
+		IWin:Debug("No range for unknown "..unit, debugmsg)
 		IWin_CombatVar["inRange"][cacheKey] = false
 		return false
 	end
@@ -987,38 +971,54 @@ function IWin:IsInRange(spell, distance, unit, debugmsg)
 	end
 end
 
--- range values: static number, meleeAutoAttack
-function IWin:GetEnemyInRange(range, debugmsg)
-	if type(range) == "number" then return range end
-	local cached = IWin_CombatVar["enemyInRange"][range]
+-- spell values: meleeAutoAttack, spell name
+function IWin:GetEnemyInRange(spell, debugmsg)
+	local cached = IWin_CombatVar["enemyInRange"][spell]
 	if cached ~= nil then
-		IWin:Debug("Enemies in "..range.." range: "..tostring(cached), debugmsg)
+		IWin:Debug("Enemies in "..tostring(spell).." range: "..tostring(cached), debugmsg)
 		return cached
 	end
+	local spellId = CleveRoids.NampowerAPI.GetSpellIdFromName(spell)
+    local spellRange = spellId and CleveRoids.NampowerAPI.GetSpellRange(spellId)
     local result = CleveRoids.CountEnemiesMatching(function(unit)
-        local distance = UnitXP("distanceBetween", "player", unit, range)
-        return distance and distance <= 5
-    end)
-    IWin_CombatVar["enemyInRange"][range] = result
-	IWin:Debug("Enemies in "..range.." range: "..tostring(result), debugmsg)
+				    	if spell == "meleeAutoAttack" then
+				    		local distance = UnitXP("distanceBetween", "player", unit, "meleeAutoAttack")
+				        	return distance and distance <= 5
+				        end
+				        if spellRange and spellRange > 0 then
+				            local distance = UnitXP("distanceBetween", "player", unit)
+				            return distance and distance <= spellRange
+				        end
+				        return CleveRoids.NampowerAPI.IsSpellInRange(spell, unit) == 1
+	    			end)
+    IWin_CombatVar["enemyInRange"][spell] = result
+	IWin:Debug("Enemies in "..tostring(spell).." range: "..tostring(result), debugmsg)
 	return result
 end
 
--- range values: static number, meleeAutoAttack
-function IWin:GetEnemyInFront(range, debugmsg)
-	if staticReturn then return staticReturn end
-	local cached = IWin_CombatVar["enemyInFront"][range]
+-- spell values: meleeAutoAttack, spell name
+function IWin:GetEnemyInFront(spell, debugmsg)
+	local cached = IWin_CombatVar["enemyInFront"][spell]
 	if cached ~= nil then
-		IWin:Debug("Enemies in front in "..tostring(range)..": "..tostring(cached), debugmsg)
+		IWin:Debug("Enemies in front in "..tostring(spell).." range: "..tostring(cached), debugmsg)
 		return cached
 	end
+	local spellId = CleveRoids.NampowerAPI.GetSpellIdFromName(spell)
+    local spellRange = spellId and CleveRoids.NampowerAPI.GetSpellRange(spellId)
     local result = CleveRoids.CountEnemiesMatching(function(unit)
-    	local distance = UnitXP("distanceBetween", "player", unit, range)
-    	local facing = UnitXP("behind", unit, "player") ~= true
-        return distance and distance <= 5 and facing
-    end)
-    IWin_CombatVar["enemyInFront"][range] = result
-	IWin:Debug("Enemies in front in "..tostring(range)..": "..tostring(result), debugmsg)
+    					local facing = UnitXP("behind", unit, "player") ~= true
+    					if spell == "meleeAutoAttack" then
+				    		local distance = UnitXP("distanceBetween", "player", unit, "meleeAutoAttack")
+							return distance and distance <= 5 and facing
+						end
+						if spellRange and spellRange > 0 then
+				            local distance = UnitXP("distanceBetween", "player", unit)
+				            return distance and distance <= spellRange and facing
+				        end
+				        return CleveRoids.NampowerAPI.IsSpellInRange(spell, unit) == 1 and facing
+				    end)
+    IWin_CombatVar["enemyInFront"][spell] = result
+	IWin:Debug("Enemies in front in "..tostring(spell).." range: "..tostring(result), debugmsg)
 	return result
 end
 

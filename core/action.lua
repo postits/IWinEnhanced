@@ -10,22 +10,18 @@ function IWin:InitializeRotationCore()
 	if not IWin.hasSuperwow then
     	DEFAULT_CHAT_FRAME:AddMessage("|cFF00FFFFbalakethelock's SuperWoW|r required:")
         DEFAULT_CHAT_FRAME:AddMessage("https://github.com/balakethelock/SuperWoW")
-    	return 0
+    	return
 	end
 	if not IWin.hasUnitXP then
     	DEFAULT_CHAT_FRAME:AddMessage("|cFF00FFFFUnitXP|r required:")
         DEFAULT_CHAT_FRAME:AddMessage("https://codeberg.org/konaka/UnitXP_SP3")
-    	return 0
+    	return
 	end
-	if not IWin.libdebuff then
-		if not CleveRoids.libdebuff then
-	    	DEFAULT_CHAT_FRAME:AddMessage("|cFF00FFFFSuperCleveRoidMacros|r required:")
-	        DEFAULT_CHAT_FRAME:AddMessage("https://github.com/jrc13245/SuperCleveRoidMacros")
-	    	return 0
-	    end
-		IWin.libdebuff = CleveRoids and CleveRoids.libdebuff
-		IWin.API = CleveRoids and CleveRoids.NampowerAPI
-	end
+	if not CleveRoids.libdebuff or not CleveRoids.NampowerAPI then
+    	DEFAULT_CHAT_FRAME:AddMessage("|cFF00FFFFSuperCleveRoidMacros|r required:")
+        DEFAULT_CHAT_FRAME:AddMessage("https://github.com/jrc13245/SuperCleveRoidMacros")
+    	return
+    end
 	IWin_CombatVar = {
 		["affectingCombat"] = {},
 		["buffRemaining"] = {},
@@ -35,8 +31,6 @@ function IWin:InitializeRotationCore()
 		["dead"] = {},
 		["enemyInFront"] = {},
 		["enemyInRange"] = {},
-		["energyPerSecondPrediction"] = 0,
-		["GCD"] = 0,
 		["health"] = {},
 		["healthMax"] = {},
 		["healthPercent"] = {},
@@ -171,8 +165,8 @@ function IWin:UseItemConsumableOffensive(item, skipWindowControl)
 	IWin:UseItem(item)
 end
 
-function IWin:UseItemConsumableAOEOffensive(item, skipTargetsControl, targets, range)
-	if not skipTargetsControl and (not (IWin:GetEnemyInRange(range) >= targets) or targets == 0) then return end
+function IWin:UseItemConsumableAOEOffensive(item, skipTargetsControl, targets, spell)
+	if not skipTargetsControl and (not (IWin:GetEnemyInRange(spell) >= targets) or targets == 0) then return end
 	IWin:UseItem(item)
 end
 

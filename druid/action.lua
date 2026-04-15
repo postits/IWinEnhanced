@@ -9,13 +9,6 @@ function IWin:InitializeRotation()
 			IWin_RotationVar["lastMoonkinSpell"] = "Wrath"
 		end
 	end
-	IWin_CombatVar["energyPerSecondPrediction"] = IWin_Settings["energyPerSecondPrediction"]
-	if IWin:IsBuffActive("player", "Tiger's Fury", nil, false) then
-		IWin_CombatVar["energyPerSecondPrediction"] = IWin_CombatVar["energyPerSecondPrediction"] + 3.3
-	end
-	if IWin:IsBuffActive("player", "Berserk", nil, false) then
-		IWin_CombatVar["energyPerSecondPrediction"] = IWin_CombatVar["energyPerSecondPrediction"] + IWin_Settings["energyPerSecondPrediction"]
-	end
 end
 
 ---- Class Actions ----
@@ -165,27 +158,27 @@ function IWin:UseItemConsumableOffensiveNoGCD(skipWindowControl, skipTargetContr
 	IWin:UseItemConsumableOffensive("Potion of Quickness", skipWindowControl)
 end
 
-function IWin:UseItemConsumableAOEOffensiveNoGCD(skipTargetsControl, skipTargetControl, range)
+function IWin:UseItemConsumableAOEOffensiveNoGCD(skipTargetsControl, skipTargetControl)
 	IWin:Debug("+++ checking conditions: AOE Consumable Offensive")
 	if not skipTargetControl and not IWin:IsItemConsumableAOEOffensiveTarget(true) then return end
 	if not IWin:IsBuffActive("player", "Fire Shield", nil, false)
 		and not IWin:IsImmune("target", "fire") then
-			IWin:UseItemConsumableAOEOffensive("Oil of Immolation", skipTargetsControl, IWin_Settings["targetsOilOfImmolation"], range)
+			IWin:UseItemConsumableAOEOffensive("Oil of Immolation", skipTargetsControl, IWin_Settings["targetsOilOfImmolation"], "meleeAutoAttack")
 	end
 end
 
-function IWin:UseItemConsumableAOEOffensiveGCD(skipTargetsControl, skipTargetControl, range)
+function IWin:UseItemConsumableAOEOffensiveGCD(skipTargetsControl, skipTargetControl)
 	IWin:Debug("+++ checking conditions: AOE Consumable Offensive")
 	if not skipTargetControl and not IWin:IsItemConsumableAOEOffensiveTarget(true) then return end
 	if IWin:IsCreatureType("Undead")
 		and not IWin:IsImmune("target", "holy") then
-			IWin:UseItemConsumableAOEOffensive("Stratholme Holy Water", skipTargetsControl, IWin_Settings["targetsHolyWater"], range)
+			IWin:UseItemConsumableAOEOffensive("Stratholme Holy Water", skipTargetsControl, IWin_Settings["targetsHolyWater"], "meleeAutoAttack")
 	end
 	if not IWin:IsImmune("target", "fire") then
-		IWin:UseItemConsumableAOEOffensive("Goblin Sapper Charge", skipTargetsControl, IWin_Settings["targetsSapper"], range)
+		IWin:UseItemConsumableAOEOffensive("Goblin Sapper Charge", skipTargetsControl, IWin_Settings["targetsSapper"], "meleeAutoAttack")
 	end
 	if not IWin:IsImmune("target", "fire") then
-		IWin:UseItemConsumableAOEOffensive("Dense Dynamite", skipTargetsControl, IWin_Settings["targetsDenseDynamite"], range)
+		IWin:UseItemConsumableAOEOffensive("Dense Dynamite", skipTargetsControl, IWin_Settings["targetsDenseDynamite"], "meleeAutoAttack")
 	end
 end
 
@@ -237,11 +230,12 @@ function IWin:UseItemTrinketOffensivePrepullRanged(skipWindowControl, skipTarget
 end
 
 ---- Feral Actions ----
-function IWin:FaerieFireFeral()
+function IWin:FaerieFireFeral(skipEnemyInRange)
 	local spell = "Faerie Fire (Feral)"
 	if IWin:IsSpellSkip(spell, nil, true, queueTime, true) then return end
 	if not IWin:IsBuffActive("target", spell)
 		and not IWin:IsImmune("target", "Faerie Fire (Feral)")
+		and (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") <= 1)
 		and (
 				IWin:IsStanceActive("Cat Form")
 				or IWin:IsStanceActive("Bear Form")
@@ -295,15 +289,11 @@ function IWin:Powershift()
 					and IWin:GetPowerType("player") == "rage"
 				)
 			)
-		and IWin:GetBuffRemaining("player", "Tiger's Fury") < 7
 		and (
-					IWin:GetPlayerDruidManaPercent() > 70
-				or (
-						IWin:GetGroupSize() > 2
-						and IWin:IsDruidManaAvailable("Reshift")
-						and IWin:GetPlayerDruidManaPercent() > 20
-					)
-			) then
+				IWin:GetBuffRemaining("player", "Tiger's Fury") < 7
+				or IWin:IsShredBurstAvailable()
+			)
+		and IWin:IsPowershiftManaAvailable() then
 				IWin:Reshift()
 	end
 end
@@ -342,10 +332,11 @@ function IWin:DemoralizingRoar()
 	end
 end
 
-function IWin:Enrage()
+function IWin:Enrage(skipEnemyInRange)
 	local spell = "Enrage"
 	if IWin:IsSpellSkip(spell, nil, false, queueTime, true) then return end
 	if IWin:GetPower("player") < 50
+		and (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") < 3)
 		and not IWin:IsBuffActive("player", "Blood Frenzy") then
 			IWin:Cast(spell, false)
 	end
@@ -379,20 +370,39 @@ function IWin:Maul()
 	end
 end
 
-function IWin:SavageBite(queueTime)
+function IWin:SavageBite(queueTime, skipEnemyInRange)
 	local spell = "Savage Bite"
 	if IWin:IsSpellSkip(spell, nil, true, queueTime, true) then return end
-	if IWin:IsRageAvailable(spell) then
-		IWin:Cast(spell)
+	if (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") <= 1)
+		and IWin:IsRageAvailable(spell) then
+			IWin:Cast(spell)
 	end
 end
 
-function IWin:Swipe()
+function IWin:SetReservedRageSavageBite(skipEnemyInRange)
+	local spell = "Savage Bite"
+	if not IWin:IsSpellLearnt(spell, nil, false) then return end
+	if (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") <= 1) then
+		IWin:SetReservedRage(spell, "nocooldown")
+	end
+end
+
+function IWin:Swipe(skipEnemyInRange)
 	local spell = "Swipe"
 	if IWin:IsSpellSkip(spell, nil, true, queueTime, true) then return end
-	if not IWin:IsBlacklistAOEDamage()
+	if (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") > 2)
+		and not IWin:IsBlacklistAOEDamage()
 		and IWin:IsRageAvailable(spell) then
 			IWin:Cast(spell)
+	end
+end
+
+function IWin:SetReservedRageSwipe(skipEnemyInRange)
+	local spell = "Swipe"
+	if not IWin:IsSpellLearnt(spell, nil, false) then return end
+	if (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") > 2)
+		and not IWin:IsBlacklistAOEDamage() then
+			IWin:SetReservedRage(spell, "nocooldown")
 	end
 end
 
@@ -603,6 +613,7 @@ function IWin:Shred()
 				IWin:GetBleedCount() < 2
 				or IWin:IsBuffActive("player", "Clearcasting")
 				or IWin:IsBuffActive("player", "Berserk")
+				or IWin:IsBuffActive("player", "Essence of the Red")
 				or IWin:GetTalentRank("Open Wounds") == 0
 			)
 		and IWin:IsEnergyAvailable(spell) then
@@ -635,8 +646,15 @@ function IWin:TigersFury()
 	if not IWin:IsBuffActive("player", spell)
 		and IWin:GetTalentRank("Blood Frenzy") ~= 0
 		and (
-				IWin:GetTimeToDie() > 6
-				or not IWin:IsExists("target")
+				not IWin:IsShredBurstAvailable()
+				or not IWin:IsBuffActive("player", "Blood Frenzy")
+				or (
+						IWin:GetPower("player") == IWin:GetPowerMax("player")
+						and (
+								not IWin:IsAffectingCombat("player")
+								or not IWin:IsInRange()
+							)
+					)
 			)
 		and IWin:IsEnergyAvailable(spell) then
 			IWin:Cast(spell, false)
@@ -648,8 +666,15 @@ function IWin:SetReservedEnergyTigersFury()
 	if not IWin:IsSpellLearnt(spell, nil, false) then return end
 	if IWin:GetTalentRank("Blood Frenzy", false) ~= 0
 		and (
-				IWin:GetTimeToDie(false) > 6
-				or not IWin:IsExists("target", false)
+				not IWin:IsShredBurstAvailable(false)
+				or not IWin:IsBuffActive("player", "Blood Frenzy", nil, false)
+				or (
+						IWin:GetPower("player", false) == IWin:GetPowerMax("player", false)
+						and (
+								not IWin:IsAffectingCombat("player", false)
+								or not IWin:IsInRange(nil, nil, nil, false)
+							)
+					)
 			) then
 				IWin:SetReservedEnergy(spell, "buff", "player")
 	end
