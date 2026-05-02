@@ -1,3 +1,5 @@
+This is only for testing purposes.
+
 # IWinEnhanced v2.5
 
 1-button rotation macros for Turtle Druids, Paladins, Rogues and Warriors.
