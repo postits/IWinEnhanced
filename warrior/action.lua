@@ -1252,8 +1252,8 @@ function IWin:ThunderClap(queueTime, skipEnemyInRange)
 		and IWin:IsInRange()
 		and IWin:IsRageAvailable(spell)
 		and not IWin_CombatVar["slamQueued"] then
-			if IWin:IsStanceActive("Berserker Stance") then
-				IWin:Cast("Defensive Stance", false)
+			if not IWin:IsStanceActive("Battle Stance") then
+				IWin:Cast("Battle Stance", false)
 			else
 				IWin:Cast(spell)
 			end
@@ -1276,10 +1276,13 @@ function IWin:ThunderClapDPS(skipEnemyInRange)
 	if IWin_Settings["thunderclap"] == "on"
 		and (skipEnemyInRange or IWin:GetEnemyInRange("meleeAutoAttack") > 2)
 		and IWin:IsInRange()
-		and not IWin:IsStanceActive("Berserker Stance")
 		and IWin:IsRageAvailable(spell)
 		and not IWin_CombatVar["slamQueued"] then
-			IWin:Cast(spell)
+			if not IWin:IsStanceActive("Battle Stance") then
+				IWin:Cast("Battle Stance", false)
+			else
+				IWin:Cast(spell)
+			end
 	end
 end
 
