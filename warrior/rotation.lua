@@ -197,10 +197,10 @@ function SlashCmdList.ITANKWARRIOR()
 	IWin:SunderArmor()
 	IWin:SetReservedRage("Sunder Armor", "nocooldown")
 	IWin:BerserkerRage()
-	IWin:HeroicStrike()
-	IWin:SetReservedRageHeroicStrike()
 	IWin:CleaveTank()
 	IWin:SetReservedRageCleave()
+	IWin:HeroicStrike()
+	IWin:SetReservedRageHeroicStrike()
 	IWin:StartAttack()
 end
 
