@@ -264,7 +264,7 @@ function IWin:CleaveTank(skipEnemyInFront)
 			) then
 				if IWin:IsStanceActive("Defensive Stance") then
 					IWin:Cast("Battle Stance", false)
-					IWin_RotationVar["reservedRageStanceLast"] = IWin:GetTime(false) + 0.5
+					IWin_RotationVar["reservedRageStanceLast"] = IWin:GetTime(false) + 0.6
 					return 
 				end
 				IWin_CombatVar["swingAttackQueued"] = true
