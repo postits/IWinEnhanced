@@ -253,6 +253,24 @@ function IWin:Cleave(skipEnemyInFront)
 	end
 end
 
+function IWin:CleaveTank(skipEnemyInFront)
+	local spell = "Cleave"
+	if IWin:IsSpellSkip(spell, nil, false, queueTime, true) then return end
+	if IWin_CombatVar["swingAttackQueued"] then return end
+	if (skipEnemyInFront or IWin:GetEnemyInFront("meleeAutoAttack", false) > 1)
+		and (
+				IWin:IsRageAvailable(spell)
+				or IWin:GetPower("player") > IWin:GetPowerMax("player") - IWin:GetRagePerSecond(false) * IWin_Settings["GCD"]
+			) then
+				if IWin:IsStanceActive("Defensive Stance") then
+					IWin:Cast("Battle Stance", false)
+				end
+				IWin_CombatVar["swingAttackQueued"] = true
+				IWin_RotationVar["startAttackThrottle"] = IWin:GetTime(false) + 0.2
+				IWin:Cast(spell, false)
+	end
+end
+
 function IWin:SetReservedRageCleave(skipEnemyInFront)
 	local spell = "Cleave"
 	if not IWin:IsSpellLearnt(spell, nil, false) then return end
@@ -260,7 +278,6 @@ function IWin:SetReservedRageCleave(skipEnemyInFront)
 		IWin:SetReservedRage(spell, "nocooldown")
 	end
 end
-
 
 function IWin:ConcussionBlow()
 	local spell = "Concussion Blow"
