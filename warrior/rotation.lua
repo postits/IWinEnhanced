@@ -199,7 +199,7 @@ function SlashCmdList.ITANKWARRIOR()
 	IWin:BerserkerRage()
 	IWin:HeroicStrike()
 	IWin:SetReservedRageHeroicStrike()
-	IWin:Cleave()
+	IWin:CleaveTank()
 	IWin:SetReservedRageCleave()
 	IWin:StartAttack()
 end
