@@ -264,6 +264,8 @@ function IWin:CleaveTank(skipEnemyInFront)
 			) then
 				if IWin:IsStanceActive("Defensive Stance") then
 					IWin:Cast("Battle Stance", false)
+					IWin_RotationVar["reservedRageStanceLast"] = IWin:GetTime(false) + 0.5
+					return 
 				end
 				IWin_CombatVar["swingAttackQueued"] = true
 				IWin_RotationVar["startAttackThrottle"] = IWin:GetTime(false) + 0.2
@@ -1206,6 +1208,7 @@ end
 
 function IWin:TankStance()
 	local spell = "Defensive Stance"
+	if IWin_RotationVar["reservedRageStanceLast"] > IWin:GetTime(false) then return end
 	IWin:Debug("+++ checking conditions: "..spell, debugmsg)
 	if IWin:IsSpellLearnt("Berserker Stance")
 		and (
