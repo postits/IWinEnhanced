@@ -2,8 +2,8 @@ if UnitClass("player") ~= "Warrior" then return end
 
 IWin_ExecuteCostReduction = {
 	[0] = 0,
-	[1] = 2,
-	[2] = 5,
+	[1] = 0,
+	[2] = 0,
 }
 
 IWin_BloodrageCostReduction = {
@@ -14,9 +14,9 @@ IWin_BloodrageCostReduction = {
 
 IWin_ThunderClapCostReduction = {
 	[0] = 0,
-	[1] = 1,
-	[2] = 2,
-	[3] = 4,
+	[1] = 0,
+	[2] = 0,
+	[3] = 0,
 }
 
 function IWin:GetExecuteCostReduction()
