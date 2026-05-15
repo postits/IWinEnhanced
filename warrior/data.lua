@@ -8,8 +8,8 @@ IWin_ExecuteCostReduction = {
 
 IWin_BloodrageCostReduction = {
 	[0] = 0,
-	[1] = 2,
-	[2] = 5,
+	[1] = 10,
+	[2] = 20,
 }
 
 IWin_ThunderClapCostReduction = {
