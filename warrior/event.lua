@@ -60,7 +60,7 @@ IWin:SetScript("OnEvent", function()
 			IWin_RotationVar["revengeAvailable"] = IWin:GetTime(false) + 4
 		end
 	elseif event == "CHAT_MSG_COMBAT_CREATURE_VS_SELF_MISSES" then
-		if string.find(arg1,"dodge") or string.find(arg1,"parry") then
+		if string.find(arg1,"dodge") or string.find(arg1,"parry") or string.find(arg1,"resist") then
 			IWin_RotationVar["revengeAvailable"] = IWin:GetTime(false) + 4
 		end
 	elseif event == "CHAT_MSG_COMBAT_SELF_MISSES" or event == "CHAT_MSG_SPELL_DAMAGESHIELDS_ON_SELF" then
